@@ -1,0 +1,859 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#22262e" media="(prefers-color-scheme: dark)">
+<title>Adam's Stag</title>
+<meta name="description" content="Adam's Stag in Manchester, 30 Oct to 1 Nov. The running order, live, with directions to every stop.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Adam's Stag · Manchester">
+<meta property="og:description" content="Fri 30 Oct to Sun 1 Nov. What's on now, what's next, and how to get there.">
+<!-- Absolute URL needed for link previews. Update if the site moves to a custom domain. -->
+<meta property="og:image" content="https://jme-h.github.io/adams-stag/preview.jpg">
+<meta property="og:image:width" content="640">
+<meta property="og:image:height" content="360">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍻</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Doto:wght@800&family=Fredoka:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css">
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface-2: #e9ecf1;
+    --ink: #0e1117;
+    --muted: #5d6573;
+    --line: #d9dde4;
+    --accent: #2f5bff;
+    --accent-ink: #ffffff;
+    --accent-soft: #e5ebff;
+    --now: #ff2e63;
+    --route: #0e1117;
+    --shadow: 0 1px 0 rgb(14 17 23 / .04);
+    --radius: 8px;
+    --font: "Archivo", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      /* Dim slate rather than near-black, so the screen doesn't turn into a mirror */
+      --bg: #22262e;
+      --surface: #2c313b;
+      --surface-2: #373d49;
+      --ink: #eceff4;
+      --muted: #a4acba;
+      --line: #3e4552;
+      --accent: #6f8cff;
+      --accent-ink: #0b0d12;
+      --accent-soft: #33406b;
+      --now: #ff4d7a;
+      --route: #eef1f6;
+      --shadow: none;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.45 var(--font);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  a { color: inherit; }
+  button { font: inherit; color: inherit; }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+
+  /* Header */
+  header { padding: 20px 0 12px; }
+  h1, .status .big, .card h3, .tab b {
+    font-stretch: 70%; font-weight: 800; text-transform: uppercase; letter-spacing: .01em;
+  }
+  h1 {
+    font-size: clamp(48px, 12vw, 104px); line-height: .88; font-weight: 900;
+    margin: 14px 0 8px;
+  }
+  .sub { color: var(--muted); margin: 0; }
+
+  /* Status card */
+  .status {
+    margin: 18px 0 8px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow: hidden;
+    display: grid; grid-template-columns: 1fr 1fr;
+  }
+  .status > div { padding: 16px 18px; min-width: 0; }
+  .status > div + div { border-left: 1px solid var(--line); }
+  .status .label { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+  .status .label .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--now); margin-right: 6px; animation: pulse 1.6s infinite; vertical-align: 1px; }
+  .status .big { font-size: 28px; line-height: 1; margin: 6px 0 4px; }
+  .status .meta { color: var(--muted); font-size: 14px; }
+  .status .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .status.solo { grid-template-columns: 1fr; }
+  .countdown { font-variant-numeric: tabular-nums; }
+  .bar { height: 6px; background: var(--surface-2); border-radius: 99px; margin-top: 10px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width .6s ease; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid var(--line); background: var(--surface); border-radius: 6px;
+    padding: 7px 13px; font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer;
+    transition: background .15s, transform .1s;
+  }
+  .btn:hover { background: var(--surface-2); }
+  .btn:active { transform: scale(.97); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn.primary:hover { filter: brightness(1.05); }
+
+  /* Day tabs */
+  .tabs {
+    position: sticky; top: 0; z-index: 1000;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    padding: 10px 0; margin: 8px 0 4px;
+  }
+  .tabs .wrap { display: flex; gap: 8px; align-items: center; }
+  .tab {
+    flex: 1 1 0; border: 1px solid var(--line); background: var(--surface);
+    border-radius: var(--radius); padding: 8px 10px; cursor: pointer; text-align: left;
+    display: flex; flex-direction: column; justify-content: center; line-height: 1.2;
+    min-height: 50px; min-width: 0;
+  }
+  .tab b { font-size: 20px; }
+  .tab span { font-size: 12px; color: var(--muted); }
+  .tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .tab[aria-selected="true"] span { color: inherit; opacity: .7; }
+  .tab .today { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--now); }
+  .tab .wx { font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: clip; }
+  .tab[aria-selected="true"] .today { color: var(--accent); opacity: 1; }
+  /* Light mode: a solid black tab is too heavy, so tint it blue and keep the text dark */
+  @media (prefers-color-scheme: light) {
+    .tab[aria-selected="true"] { background: var(--accent-soft); color: var(--ink); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+    .tab[aria-selected="true"] span { color: var(--muted); opacity: 1; }
+  }
+  .now-btn { flex: 0 0 auto; }
+
+  /* Layout */
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 24px; align-items: start; padding-top: 12px; }
+  .mapcol { position: sticky; top: 76px; }
+  .mapbar, .mapfab, .only-mobile { display: none; }
+  #map {
+    height: calc(100vh - 110px); min-height: 420px; max-height: 760px;
+    border-radius: var(--radius); border: 1px solid var(--line); box-shadow: var(--shadow);
+    background: var(--surface-2);
+  }
+  .maptools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+  .legend { font-size: 13px; color: var(--muted); margin-left: auto; display: flex; gap: 12px; align-items: center; }
+  .legend i { display: inline-block; width: 22px; height: 0; border-top: 3px dashed var(--route); vertical-align: middle; margin-right: 4px; opacity: .55; }
+  .legend i.hl { border-top: 4px solid var(--accent); opacity: 1; }
+
+  /* Timeline */
+  ol.timeline { list-style: none; margin: 0; padding: 0; position: relative; }
+  ol.timeline::before {
+    content: ""; position: absolute; left: 63px; top: 8px; bottom: 8px; width: 2px; background: var(--line);
+  }
+  .ev { display: grid; grid-template-columns: 52px 24px 1fr; gap: 0 0; padding: 4px 0; scroll-margin-top: 90px; }
+  .ev .time { text-align: right; padding-top: 14px; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 15px; }
+  .ev .time small { display: block; font-weight: 500; color: var(--muted); font-size: 12px; }
+  .ev .node { position: relative; }
+  .ev .node::after {
+    content: ""; position: absolute; left: 6px; top: 18px; width: 12px; height: 12px; border-radius: 50%;
+    background: var(--surface); border: 2px solid var(--muted);
+  }
+  .ev.past .node::after { background: var(--muted); }
+  .ev.now .node::after { background: var(--now); border-color: var(--now); box-shadow: 0 0 0 5px color-mix(in srgb, var(--now) 25%, transparent); animation: pulse 1.6s infinite; }
+  .ev.next .node::after { border-color: var(--accent); background: var(--accent); }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 12px 14px; cursor: pointer; transition: border-color .15s, box-shadow .15s, opacity .2s;
+    margin-left: 4px; min-width: 0;
+  }
+  .card:hover { border-color: color-mix(in srgb, var(--ink) 30%, var(--line)); }
+  .card:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .ev.past .card { opacity: .55; }
+  .ev.past .card:hover, .ev.past.open .card { opacity: 1; }
+  .ev.now .card { border-color: var(--now); box-shadow: 0 0 0 1px var(--now), var(--shadow); }
+  .ev.open .card { box-shadow: var(--shadow); border-color: var(--accent); }
+  .card h3 { margin: 0; font-size: 22px; line-height: 1.05; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .chip { font-size: 11px; font-weight: 700; font-stretch: 100%; text-transform: uppercase; letter-spacing: .06em; padding: 3px 6px; border-radius: 3px; align-self: center; }
+  .chip.now { background: var(--now); color: #fff; }
+  .chip.next { background: var(--accent); color: var(--accent-ink); }
+  .venue { margin: 2px 0 0; color: var(--muted); }
+  .venue.tbc { font-style: italic; }
+  .leg { margin-top: 8px; font-size: 13px; color: var(--muted); }
+  .legwx { white-space: nowrap; }
+  .more { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 14px; }
+  .ev.open .more { display: block; }
+  .more p { margin: 0 0 8px; }
+  .more .note { background: var(--accent-soft); border-radius: 8px; padding: 8px 10px; }
+  .more .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ev .progress { height: 4px; border-radius: 99px; background: var(--surface-2); margin-top: 10px; overflow: hidden; display: none; }
+  .ev.now .progress { display: block; }
+  .ev .progress i { display: block; height: 100%; background: var(--now); }
+
+  /* Bigby.cloud banner, in Bigby's own colours */
+  .bigby {
+    --bb-amber: #eda400; --bb-teal: #007a7a;
+    margin-top: 12px; position: relative; overflow: hidden;
+    display: grid; grid-template-columns: auto 1fr auto; gap: 20px 28px; align-items: center;
+    padding: 22px 26px; border-radius: var(--radius); text-decoration: none;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line); box-shadow: var(--shadow);
+    font-family: Fredoka, system-ui, sans-serif;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .bigby::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 6px; background: var(--bb-amber); }
+  .bigby:hover { transform: translateY(-2px); box-shadow: 0 2px 4px rgb(0 0 0 / .06), 0 14px 32px rgb(0 0 0 / .1); }
+  .bigby .mark { font-size: 40px; line-height: 1; white-space: nowrap; }
+  .bigby .mark b { color: var(--bb-amber); font-weight: 600; letter-spacing: -.01em; }
+  .bigby .mark span { font-family: Doto, monospace; font-weight: 800; font-size: .55em; }
+  .bigby .sponsor { position: absolute; top: 8px; right: 12px; font: 600 10px/1 system-ui, sans-serif; text-transform: uppercase; letter-spacing: .08em; color: #8a857b; }
+  .bigby h2 { margin: 0 0 4px; font-size: 21px; font-weight: 600; line-height: 1.2; }
+  .bigby h2 .short { display: none; }
+  .bigby p { margin: 0; font-size: 15px; color: var(--muted); font-family: system-ui, sans-serif; }
+  .bigby p strong { color: var(--bb-teal); }
+  .bigby .cta {
+    background: var(--bb-amber); color: #1b1a17; font-weight: 600; font-size: 16px;
+    border-radius: 99px; padding: 10px 20px; white-space: nowrap;
+  }
+  @media (prefers-color-scheme: dark) {
+    .bigby p strong { color: #3fbcbc; }
+  }
+  @media (max-width: 700px) {
+    .bigby { gap: 12px; padding: 16px 12px 10px 18px; }
+    .bigby::before { width: 4px; }
+    .bigby .mark { font-size: 24px; }
+    .bigby .sponsor { top: 5px; right: 10px; font-size: 9px; }
+    .bigby h2 { font-size: 14px; margin: 0; }
+    .bigby h2 .long, .bigby p { display: none; }
+    .bigby h2 .short { display: inline; }
+    .bigby .cta { font-size: 13px; padding: 6px 12px; }
+  }
+  @media (max-width: 380px) {
+    .bigby { grid-template-columns: 1fr auto; }
+    .bigby .mark { grid-column: 1 / -1; }
+  }
+
+  footer.wrap { color: var(--muted); font-size: 13px; padding-top: 32px; padding-bottom: 40px; text-align: center; }
+  footer p { margin: 0 0 6px; }
+  footer p a {
+    color: var(--ink); text-decoration: none; font-size: 22px;
+    font-stretch: 70%; font-weight: 800; text-transform: uppercase; letter-spacing: .01em;
+  }
+  footer p a:hover { color: var(--accent); }
+
+  /* Leaflet markers */
+  .pin {
+    width: 34px; height: 34px; border-radius: 50% 50% 50% 4px; transform: rotate(-45deg);
+    background: var(--surface); border: 2px solid var(--ink); box-shadow: var(--shadow);
+    display: grid; place-items: center;
+  }
+  .pin span { transform: rotate(45deg); font-size: 16px; line-height: 1; }
+  .pin.active { background: var(--accent); border-color: var(--accent-ink); }
+  .pin.now { border-color: var(--now); box-shadow: 0 0 0 6px color-mix(in srgb, var(--now) 30%, transparent); }
+  .pin.dim { opacity: .45; }
+  .me { width: 16px; height: 16px; border-radius: 50%; background: #2b7cff; border: 3px solid #fff; box-shadow: 0 0 0 6px rgb(43 124 255 / .25); }
+  .leaflet-container { font: inherit; }
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--surface); color: var(--ink); }
+  .leaflet-popup-content { margin: 10px 12px; }
+  .leaflet-popup-content b { font-weight: 800; }
+  .leaflet-control-attribution { font-size: 10px; }
+  @media (prefers-color-scheme: dark) {
+    .leaflet-control-attribution { background: rgb(0 0 0 / .5) !important; color: #aaa; }
+    .leaflet-control-attribution a { color: #ccc; }
+    .leaflet-bar a { background: var(--surface); color: var(--ink); border-color: var(--line); }
+  }
+
+  /* Mobile: running order is the page; the map opens full screen on demand */
+  @media (max-width: 860px) {
+    .grid { grid-template-columns: 1fr; gap: 16px; }
+    .mapcol {
+      position: fixed; inset: 0; z-index: 2000; display: none; flex-direction: column;
+      background: var(--bg);
+      padding: calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));
+    }
+    body.map-open { overflow: hidden; }
+    body.map-open .mapcol { display: flex; }
+    .mapbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .mapbar b { font-stretch: 70%; font-weight: 800; text-transform: uppercase; font-size: 24px; line-height: 1; }
+    /* Leave room under the footer so the floating Map button never covers it */
+    footer.wrap { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+    #map { flex: 1; height: auto; min-height: 0; max-height: none; }
+    .legend { margin-left: 0; width: 100%; }
+    .mapfab {
+      display: inline-flex; position: fixed; z-index: 1500;
+      right: 16px; bottom: calc(16px + env(safe-area-inset-bottom));
+      padding: 12px 18px; font-size: 16px; box-shadow: 0 6px 20px rgb(0 0 0 / .3);
+    }
+    body.map-open .mapfab { display: none; }
+    .only-mobile { display: inline-flex; }
+  }
+  @media (max-width: 520px) {
+    .status { grid-template-columns: 1fr; }
+    .status > div + div { border-left: 0; border-top: 1px solid var(--line); }
+    .tab { padding: 7px 8px; }
+    .tab b { font-size: 16px; }
+    .tab .wx { font-size: 11px; letter-spacing: -.02em; }
+    .now-btn .lbl { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<aside class="wrap">
+  <a class="bigby" href="https://bigby.cloud/drive?utm_source=adams-stag&amp;utm_medium=banner#pricing" target="_blank" rel="noopener">
+    <span class="sponsor">Sponsored</span>
+    <div class="mark" aria-label="Bigby.cloud"><b>Bigby</b><span>.cloud</span></div>
+    <div>
+      <h2><span class="long">Some photos from this weekend don't belong on Big Tech's servers.</span><span class="short">Keep this weekend's photos off Big Tech.</span></h2>
+      <p>Private, encrypted cloud storage, born and built in the UK. We don't scan your files, sell your data or train AI on them. <strong>From £3.99 a month</strong>.</p>
+    </div>
+    <span class="cta">See pricing</span>
+  </a>
+</aside>
+
+<header class="wrap">
+  <h1>Adam's Stag</h1>
+  <p class="sub">The running order. Tap anything for directions.</p>
+  <section class="status" id="status" aria-live="polite"></section>
+</header>
+
+<nav class="tabs" aria-label="Days">
+  <div class="wrap" role="tablist" id="tabs"></div>
+</nav>
+
+<main class="wrap grid">
+  <section aria-label="Schedule">
+    <ol class="timeline" id="timeline"></ol>
+  </section>
+  <section class="mapcol" id="mapcol" aria-label="Map">
+    <div class="mapbar"><b id="mapday"></b><button class="btn" id="mapclose" type="button">✕ Close</button></div>
+    <div id="map"></div>
+    <div class="maptools">
+      <button class="btn" id="locate" type="button">📍 Where am I?</button>
+      <button class="btn" id="fit" type="button">🗺️ Whole day</button>
+      <span class="legend"><span><i></i>Walk</span><span><i class="hl"></i>Selected</span></span>
+    </div>
+  </section>
+</main>
+
+<button class="btn primary mapfab" id="mapfab" type="button">🗺️ Map</button>
+
+<footer class="wrap">
+  <p><a href="https://www.youtube.com/watch?v=YIW2j1w8gP4" target="_blank" rel="noopener">To the regiment! 🍻</a></p>
+  Walking times are rough, and so will you be.
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
+<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.3/leaflet-maplibre-gl.js"></script>
+<script src="data.js"></script>
+<script>
+(() => {
+  const TZ = TRIP.tz;
+  const MIN = 60e3;
+
+  // UK is on GMT (UTC+0) for the whole trip, so local times parse as UTC.
+  const parse = s => new Date(s + "Z");
+
+  // ?now=2026-10-31T13:10 lets you preview the page at any point in the weekend.
+  const simParam = new URLSearchParams(location.search).get("now");
+  const simOffset = simParam ? parse(simParam) - Date.now() : 0;
+  const now = () => new Date(Date.now() + simOffset);
+
+  const fmtTime = d => d.toLocaleTimeString("en-GB", { timeZone: TZ, hour: "2-digit", minute: "2-digit" });
+  const dayKey = d => d.toLocaleDateString("en-CA", { timeZone: TZ });
+  const fmtDur = ms => {
+    const m = Math.max(0, Math.round(ms / MIN));
+    if (m < 60) return `${m} min`;
+    const h = Math.floor(m / 60), r = m % 60;
+    if (h < 24) return r ? `${h}h ${r}m` : `${h}h`;
+    const d = Math.floor(h / 24);
+    return `${d}d ${h % 24}h`;
+  };
+  const fmtDist = m => m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1)} km`;
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  const mapsQuery = p => encodeURIComponent(`${p.name}, ${p.address}`);
+  const dirUrl = p => `https://www.google.com/maps/dir/?api=1&destination=${mapsQuery(p)}&travelmode=walking`;
+
+  const haversine = (a, b) => {
+    const R = 6371e3, rad = x => x * Math.PI / 180;
+    const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  };
+
+  // Work out a real time window for every event.
+  const events = EVENTS.map((e, i) => ({ ...e, i, startD: parse(e.start), p: e.place ? PLACES[e.place] : null }));
+  events.forEach(e => {
+    const later = events.find(o => o.startD > e.startD);
+    const nextStart = later ? later.startD : new Date(+e.startD + 60 * MIN);
+    if (e.end === "late") { e.endD = nextStart; e.late = true; }
+    else if (e.end) e.endD = parse(e.end);
+    else { e.endD = new Date(Math.min(+e.startD + 15 * MIN, +nextStart)); e.moment = true; }
+    if (e.leg) e.route = ROUTES[e.leg];
+    e.day = dayKey(e.startD);
+  });
+
+  const days = [...new Set(events.map(e => e.day))];
+  const tripStart = events[0].startD;
+  const tripEnd = events[events.length - 1].endD;
+
+  const timeLabel = e => {
+    const s = fmtTime(e.startD);
+    if (e.moment) return [s, ""];
+    if (e.late) return [s, "late"];
+    return [s, fmtTime(e.endD)];
+  };
+
+  const legText = e => {
+    if (!e.route) return "";
+    const [from] = e.leg.split(">");
+    const label = e.legLabel || `from ${PLACES[from].name.replace(/ \(.*\)$/, "")}`;
+    return `🚶 ${fmtDur(e.route.s * 1000)} walk · ${fmtDist(e.route.m)} ${esc(label)}<span class="legwx" data-i="${e.i}">${legWx(e)}</span>`;
+  };
+
+  // ---------- State ----------
+  let state = {};
+  // Follow the live item until someone taps around; the Now button resumes it.
+  let followLive = true;
+  const computeState = t => {
+    const current = events.filter(e => e.startD <= t && t < e.endD);
+    const upcoming = events.find(e => e.startD > t);
+    return { t, current, upcoming, before: t < tripStart, after: t >= tripEnd };
+  };
+  const statusOf = (e, s) =>
+    s.current.includes(e) ? "now" : e === s.upcoming ? "next" : e.endD <= s.t ? "past" : "future";
+
+  // ---------- Weather ----------
+  // Open-Meteo: free, no key. Last good forecast is kept so it still shows without signal.
+  const WX_KEY = "stag-wx", WXH_KEY = "stag-wx-hourly";
+  let weather = {}, hourly = {};
+  try { weather = JSON.parse(localStorage.getItem(WX_KEY)) || {}; } catch {}
+  try { hourly = JSON.parse(localStorage.getItem(WXH_KEY)) || {}; } catch {}
+  const wxIcon = (c, night) => c <= 2 && night ? "🌙" : c === 0 ? "☀️" : c <= 2 ? "🌤️" : c === 3 ? "☁️" : c <= 48 ? "🌫️" :
+    c <= 67 || (c >= 80 && c <= 82) ? "🌧️" : c <= 77 || c === 85 || c === 86 ? "🌨️" : "⛈️";
+  const wxLabel = d => {
+    const w = weather[d];
+    return w ? `<span class="wx">${wxIcon(w.code)} ${Math.round(w.hi)}°/${Math.round(w.lo)}°</span>` : "";
+  };
+  // Walks use the hour they set off: event start minus walking time, to the nearest hour.
+  const legWx = e => {
+    const t = Math.round((e.startD - e.route.s * 1000) / 36e5) * 36e5;
+    const w = hourly[new Date(t).toISOString().slice(0, 16)];
+    if (!w) return "";
+    const rain = w.rain >= 30 ? ` · 💧${w.rain}%` : "";
+    return ` · ${wxIcon(w.code, w.night)} ${Math.round(w.temp)}°${rain}`;
+  };
+  const updateLegWx = () => tl.querySelectorAll(".legwx").forEach(el => { el.innerHTML = legWx(events[+el.dataset.i]); });
+  const loadWeather = () => {
+    const c = PLACES.hotel;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lng}` +
+      `&daily=weather_code,temperature_2m_max,temperature_2m_min` +
+      `&hourly=weather_code,temperature_2m,precipitation_probability,is_day&timezone=${encodeURIComponent(TZ)}` +
+      `&start_date=${days[0]}&end_date=${days[days.length - 1]}`;
+    fetch(url).then(r => r.ok ? r.json() : Promise.reject()).then(j => {
+      j.daily.time.forEach((d, i) => {
+        weather[d] = { code: j.daily.weather_code[i], hi: j.daily.temperature_2m_max[i], lo: j.daily.temperature_2m_min[i] };
+      });
+      j.hourly.time.forEach((h, i) => {
+        hourly[h] = { code: j.hourly.weather_code[i], temp: j.hourly.temperature_2m[i], rain: j.hourly.precipitation_probability[i], night: !j.hourly.is_day[i] };
+      });
+      try { localStorage.setItem(WX_KEY, JSON.stringify(weather)); localStorage.setItem(WXH_KEY, JSON.stringify(hourly)); } catch {}
+      renderTabs();
+      updateLegWx();
+    }).catch(() => {});
+  };
+
+  // ---------- Tabs ----------
+  let selectedDay = null;
+  const tabsEl = document.getElementById("tabs");
+  const renderTabs = () => {
+    const today = dayKey(now());
+    tabsEl.innerHTML = days.map(d => {
+      const date = new Date(d + "T12:00Z");
+      const name = date.toLocaleDateString("en-GB", { timeZone: TZ, weekday: "short" });
+      const num = date.toLocaleDateString("en-GB", { timeZone: TZ, day: "numeric", month: "short" });
+      const extra = d === today ? `<span class="today">Today</span>` : "";
+      return `<button class="tab" role="tab" aria-selected="${d === selectedDay}" data-day="${d}"><b>${name} ${num.split(" ")[0]}</b>${wxLabel(d)}${extra}</button>`;
+    }).join("") + `<button class="btn primary now-btn" id="jump" type="button" title="Jump to now">⏱ <span class="lbl">Now</span></button>`;
+  };
+  tabsEl.addEventListener("click", ev => {
+    const tab = ev.target.closest(".tab");
+    if (tab) { followLive = false; selectDay(tab.dataset.day); return; }
+    if (ev.target.closest("#jump")) jumpToNow(true);
+  });
+
+  // ---------- Timeline ----------
+  const tl = document.getElementById("timeline");
+  let openIdx = null;
+
+  const renderTimeline = () => {
+    tl.innerHTML = events.filter(e => e.day === selectedDay).map(e => {
+      const [a, b] = timeLabel(e);
+      const p = e.p;
+      const venue = p ? `<p class="venue">${p.emoji} ${esc(p.name)}</p>` : `<p class="venue tbc">${esc(e.tbc || "Venue TBC, decide on the night")}</p>`;
+      const more = `
+        <div class="more">
+          ${p ? `<p>${esc(p.address)}</p>` : ""}
+          ${e.note ? `<p class="${p && !e.plain ? "note" : ""}">${esc(e.note)}</p>` : ""}
+          ${p ? `<div class="actions">
+                  <a class="btn primary" href="${dirUrl(p)}" target="_blank" rel="noopener">🧭 Directions</a>
+                  <button class="btn only-mobile" type="button" data-map="${e.i}">🗺️ Show on map</button>
+                </div>` : e.note ? "" : `<p>No pin yet. Whoever's sober enough picks.</p>`}
+        </div>`;
+      return `
+        <li class="ev" data-i="${e.i}" id="ev-${e.i}">
+          <div class="time">${a}<small>${b}</small></div>
+          <div class="node"></div>
+          <div class="card" tabindex="0" role="button" aria-expanded="false">
+            <h3>${esc(e.title)} <span class="chipslot"></span></h3>
+            ${venue}
+            ${e.route ? `<div class="leg">${legText(e)}</div>` : ""}
+            <div class="progress"><i></i></div>
+            ${more}
+          </div>
+        </li>`;
+    }).join("");
+  };
+
+  const toggleOpen = (i, { pan = true } = {}) => {
+    followLive = false;
+    openIdx = openIdx === i ? null : i;
+    tl.querySelectorAll(".ev").forEach(li => {
+      const on = +li.dataset.i === openIdx;
+      li.classList.toggle("open", on);
+      li.querySelector(".card").setAttribute("aria-expanded", on);
+    });
+    highlight(openIdx, pan);
+  };
+  tl.addEventListener("click", ev => {
+    if (ev.target.closest("a")) return;
+    const m = ev.target.closest("[data-map]");
+    if (m) { openMap(+m.dataset.map); return; }
+    const li = ev.target.closest(".ev");
+    if (li) toggleOpen(+li.dataset.i);
+  });
+  tl.addEventListener("keydown", ev => {
+    if ((ev.key === "Enter" || ev.key === " ") && ev.target.classList.contains("card")) {
+      ev.preventDefault();
+      toggleOpen(+ev.target.closest(".ev").dataset.i);
+    }
+  });
+
+  const updateTimeline = s => {
+    tl.querySelectorAll(".ev").forEach(li => {
+      const e = events[+li.dataset.i];
+      const st = statusOf(e, s);
+      li.classList.remove("now", "next", "past", "future");
+      li.classList.add(st);
+      const chip = li.querySelector(".chipslot");
+      chip.innerHTML = st === "now" ? `<span class="chip now">Now</span>` :
+        st === "next" ? `<span class="chip next">In ${fmtDur(e.startD - s.t)}</span>` : "";
+      if (st === "now") {
+        const pct = Math.min(100, (s.t - e.startD) / (e.endD - e.startD) * 100);
+        li.querySelector(".progress i").style.width = `${pct}%`;
+      }
+    });
+  };
+
+  // ---------- Status card ----------
+  const statusEl = document.getElementById("status");
+  let myPos = null;
+
+  const youAreFrom = p => myPos && p ? ` · ${fmtDist(haversine(myPos, p))} from you` : "";
+
+  const renderStatus = s => {
+    const nxt = s.upcoming;
+    if (s.before) {
+      statusEl.className = "status solo";
+      statusEl.innerHTML = `
+        <div>
+          <div class="label">Kick-off in</div>
+          <div class="big countdown">${fmtDur(tripStart - s.t)}</div>
+          <div class="meta">First stop: ${esc(events[0].title)} at ${esc(events[0].p.name)}, Fri ${fmtTime(tripStart)}${youAreFrom(events[0].p)}</div>
+          <div class="actions"><a class="btn primary" href="${dirUrl(events[0].p)}" target="_blank" rel="noopener">🧭 Directions</a></div>
+        </div>`;
+      return;
+    }
+    if (s.after) {
+      statusEl.className = "status solo";
+      statusEl.innerHTML = `<div><div class="label">That's a wrap</div><div class="big">Hope you made the train.</div><div class="meta">Drink some water. Text the group chat that you're home.</div></div>`;
+      return;
+    }
+    // Late at night, or on an open-ended night out, offer the way back to the hotel.
+    const hour = +s.t.toLocaleTimeString("en-GB", { timeZone: TZ, hour: "2-digit", hourCycle: "h23" });
+    const homeTime = (hour >= 22 || hour < 6 || s.current.some(e => e.late)) && !s.current.some(e => e.place === "hotel");
+    const homeBtn = homeTime ? `<a class="btn" href="${dirUrl(PLACES.hotel)}" target="_blank" rel="noopener">🛏️ Directions to the hotel</a>` : "";
+    // Prefer the item with a venue if two things happen at once.
+    const cur = s.current.find(e => e.p) || s.current[s.current.length - 1];
+    // For anyone who's lost the group: straight to where everyone is.
+    const findBtn = cur && cur.p ? `<a class="btn primary" href="${dirUrl(cur.p)}" target="_blank" rel="noopener">🧭 Take me there</a>` : "";
+    const curActions = findBtn || homeBtn ? `<div class="actions">${findBtn}${homeBtn}</div>` : "";
+    const curHtml = cur ? (() => {
+      const pct = Math.min(100, (s.t - cur.startD) / (cur.endD - cur.startD) * 100);
+      const left = cur.late ? "until late" : cur.moment ? "" : `${fmtDur(cur.endD - s.t)} left`;
+      return `
+        <div>
+          <div class="label"><span class="dot"></span>Now</div>
+          <div class="big">${esc(cur.title)}</div>
+          <div class="meta">${cur.p ? esc(cur.p.name) : "Venue TBC"}${left ? ` · ${left}` : ""}</div>
+          ${cur.moment ? "" : `<div class="bar"><i style="width:${pct}%"></i></div>`}
+          ${curActions}
+        </div>`;
+    })() : `
+        <div>
+          <div class="label">Now</div>
+          <div class="big">Free time</div>
+          <div class="meta">Nothing booked. Find a pub.</div>
+          ${curActions}
+        </div>`;
+    // Only show Next if it's still tonight. A night out runs past midnight, so days roll over at 5am.
+    const nightOf = d => dayKey(new Date(+d - 5 * 60 * MIN));
+    const nxtHtml = nxt && nightOf(nxt.startD) === nightOf(s.t) ? `
+        <div>
+          <div class="label">Next · ${fmtTime(nxt.startD)} · in <span class="countdown">${fmtDur(nxt.startD - s.t)}</span></div>
+          <div class="big">${esc(nxt.title)}</div>
+          <div class="meta">${nxt.p ? esc(nxt.p.name) : "Venue TBC"}${nxt.route ? ` · ${fmtDur(nxt.route.s * 1000)} walk` : ""}${youAreFrom(nxt.p)}</div>
+          ${nxt.p ? `<div class="actions">
+              <a class="btn primary" href="${dirUrl(nxt.p)}" target="_blank" rel="noopener">🧭 Take me there</a>
+              <button class="btn" type="button" data-show="${nxt.i}">Show on map</button>
+            </div>` : ""}
+        </div>` : "";
+    statusEl.className = "status" + (nxtHtml ? "" : " solo");
+    statusEl.innerHTML = curHtml + nxtHtml;
+  };
+  statusEl.addEventListener("click", ev => {
+    const b = ev.target.closest("[data-show]");
+    if (!b) return;
+    const e = events[+b.dataset.show];
+    if (selectedDay !== e.day) selectDay(e.day);
+    if (mobile.matches) { openMap(e.i); return; }
+    if (openIdx !== e.i) toggleOpen(e.i);
+    document.getElementById("map").scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+
+  // ---------- Map ----------
+  const dark = matchMedia("(prefers-color-scheme: dark)");
+  const map = L.map("map", { zoomControl: true, scrollWheelZoom: false }).setView([53.481, -2.238], 14);
+  // OpenFreeMap vector styles: free, no key, and much quieter than the default OSM tiles.
+  const styleUrl = () => `https://tiles.openfreemap.org/styles/${dark.matches ? "dark" : "positron"}`;
+  const base = L.maplibreGL({
+    style: styleUrl(),
+    attribution: '<a href="https://openfreemap.org">OpenFreeMap</a> &copy; <a href="https://www.openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  }).addTo(map);
+  dark.addEventListener("change", () => { base.getMaplibreMap().setStyle(styleUrl()); restyleRoutes(); });
+
+  // OpenFreeMap "dark" is near-black; repaint it in Google Maps' night palette.
+  // First matching pattern wins, so the specific ones come first.
+  const LAND = "#242f3e", CASING = "#1d2532";
+  const NIGHT = [
+    [/^background$/,                  { "background-color": LAND }],
+    [/^(landcover_ice_shelf|landcover_glacier|road_area_pier)$/, { "fill-color": LAND }],
+    [/^road_pier$/,                   { "line-color": LAND }],
+    [/^landuse_residential$/,         { "fill-color": "#27334a" }],
+    [/^(landcover_wood|landuse_park)$/, { "fill-color": "#263c3f" }],
+    [/^water$/,                       { "fill-color": "#17263c" }],
+    [/^waterway$/,                    { "line-color": "#17263c" }],
+    [/^water_name$/,                  { "text-color": "#7f8fa8", "text-halo-color": "#17263c" }],
+    [/^building$/,                    { "fill-color": "#2c3748", "fill-outline-color": "#344055" }],
+    [/^highway_path$/,                { "line-color": "#344052" }],
+    [/^highway_minor$/,               { "line-color": "#3a4556" }],
+    [/_casing$/,                      { "line-color": CASING }],
+    [/^highway_major_/,               { "line-color": "#4d5a6e" }],
+    [/^highway_motorway_/,            { "line-color": "#746855" }],
+    [/^railway.*_dashline$/,          { "line-color": LAND }],
+    [/^railway/,                      { "line-color": "#46516a" }],
+    [/^highway_name/,                 { "text-color": "#9ca5b3", "text-halo-color": CASING }],
+    [/^place_/,                       { "text-color": "#c3cad6", "text-halo-color": CASING }],
+  ];
+  const gl = base.getMaplibreMap();
+  gl.on("style.load", () => {
+    if (!dark.matches) return;
+    for (const { id } of gl.getStyle().layers) {
+      const hit = NIGHT.find(([re]) => re.test(id));
+      if (hit) for (const [k, v] of Object.entries(hit[1])) gl.setPaintProperty(id, k, v);
+    }
+  });
+  map.on("click", () => map.scrollWheelZoom.enable());
+
+  const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const dayLayer = L.layerGroup().addTo(map);
+  let markers = {}, lines = {};
+
+  const pinIcon = (p, cls = "") => L.divIcon({
+    className: "", iconSize: [34, 34], iconAnchor: [17, 34], popupAnchor: [0, -32],
+    html: `<div class="pin ${cls}"><span>${p.emoji}</span></div>`,
+  });
+
+  const routeStyle = hl => hl
+    ? { color: css("--accent"), weight: 6, opacity: 1, dashArray: null }
+    : { color: css("--route"), weight: 3, opacity: .45, dashArray: "6 7" };
+
+  const renderMap = () => {
+    dayLayer.clearLayers();
+    markers = {}; lines = {};
+    const dayEvents = events.filter(e => e.day === selectedDay);
+    dayEvents.filter(e => e.route).forEach(e => {
+      lines[e.i] = L.polyline(e.route.path, routeStyle(false)).addTo(dayLayer)
+        .on("click", () => toggleOpen(e.i, { pan: false }));
+    });
+    // Always show the hotel so there's a way home.
+    const keys = new Set(dayEvents.flatMap(e => [e.place, ...(e.leg ? e.leg.split(">") : [])]).filter(Boolean));
+    keys.add("hotel");
+    keys.forEach(k => {
+      const p = PLACES[k];
+      const evs = dayEvents.filter(e => e.place === k);
+      const when = evs.map(e => `${fmtTime(e.startD)} ${esc(e.title)}`).join("<br>");
+      markers[k] = L.marker([p.lat, p.lng], { icon: pinIcon(p, evs.length ? "" : "dim"), riseOnHover: true })
+        .bindPopup(`<b>${esc(p.name)}</b><br><small>${esc(p.address)}</small>${when ? `<br>${when}` : ""}<br><a href="${dirUrl(p)}" target="_blank" rel="noopener">Directions →</a>`)
+        .addTo(dayLayer);
+      markers[k].on("click", () => {
+        const e = evs[0];
+        if (e && openIdx !== e.i) toggleOpen(e.i, { pan: false });
+      });
+    });
+    fitDay();
+  };
+
+  // On mobile the map is hidden until opened, and Leaflet throws if asked to move a zero-size map.
+  // openMap() re-fits once it's visible.
+  const mapHidden = () => !document.getElementById("map").offsetWidth;
+
+  const fitDay = () => {
+    if (mapHidden()) return;
+    const pts = Object.values(markers).map(m => m.getLatLng())
+      .concat(Object.values(lines).flatMap(l => l.getLatLngs()));
+    if (pts.length) map.fitBounds(L.latLngBounds(pts), { padding: [30, 30], maxZoom: 16 });
+  };
+
+  const restyleRoutes = () => Object.entries(lines).forEach(([i, l]) => l.setStyle(routeStyle(+i === openIdx)));
+
+  const highlight = (i, pan) => {
+    restyleRoutes();
+    const s = computeState(now());
+    Object.entries(markers).forEach(([k, m]) => {
+      const p = PLACES[k];
+      const sel = i != null && events[i].place === k;
+      const isNow = s.current.some(e => e.place === k);
+      const hasEvents = events.some(e => e.day === selectedDay && e.place === k);
+      m.setIcon(pinIcon(p, [sel && "active", isNow && "now", !hasEvents && !sel && "dim"].filter(Boolean).join(" ")));
+      m.setZIndexOffset(sel ? 1000 : 0);
+    });
+    if (i == null || !pan || mapHidden()) return;
+    const e = events[i];
+    if (lines[i]) { lines[i].bringToFront(); map.fitBounds(lines[i].getBounds(), { padding: [50, 50], maxZoom: 17 }); }
+    else if (e.p) map.flyTo([e.p.lat, e.p.lng], 16, { duration: .6 });
+  };
+
+  document.getElementById("fit").addEventListener("click", fitDay);
+
+  // ---------- Full-screen map (mobile) ----------
+  const mobile = matchMedia("(max-width: 860px)");
+  const mapOpen = () => document.body.classList.contains("map-open");
+
+  // Focus item i on the map, or the open item, or the whole day.
+  const openMap = i => {
+    if (mobile.matches && !mapOpen()) {
+      document.body.classList.add("map-open");
+      history.pushState({ map: true }, "");  // so the back gesture closes the map
+    }
+    document.getElementById("mapday").textContent = new Date(selectedDay + "T12:00Z")
+      .toLocaleDateString("en-GB", { timeZone: TZ, weekday: "long", day: "numeric", month: "short" });
+    map.invalidateSize();
+    if (i != null && openIdx !== i) toggleOpen(i);
+    else if (openIdx != null) highlight(openIdx, true);
+    else fitDay();
+  };
+  const closeMap = () => { if (mapOpen()) history.back(); };
+
+  document.getElementById("mapfab").addEventListener("click", () => openMap());
+  document.getElementById("mapclose").addEventListener("click", closeMap);
+  addEventListener("popstate", () => document.body.classList.remove("map-open"));
+  addEventListener("keydown", ev => { if (ev.key === "Escape") closeMap(); });
+  mobile.addEventListener("change", () => {
+    if (!mobile.matches && mapOpen()) closeMap();
+    map.invalidateSize();
+  });
+
+  // ---------- Geolocation ----------
+  let meMarker = null, meCircle = null, watching = false;
+  const locateBtn = document.getElementById("locate");
+  locateBtn.addEventListener("click", () => {
+    if (!("geolocation" in navigator)) { locateBtn.textContent = "📍 Location not available"; return; }
+    if (myPos) { map.flyTo([myPos.lat, myPos.lng], 16, { duration: .6 }); }
+    if (watching) return;
+    watching = true;
+    locateBtn.textContent = "📍 Finding you…";
+    let first = true;
+    navigator.geolocation.watchPosition(pos => {
+      myPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      const ll = [myPos.lat, myPos.lng];
+      if (!meMarker) {
+        meMarker = L.marker(ll, { icon: L.divIcon({ className: "", html: '<div class="me"></div>', iconSize: [16, 16], iconAnchor: [8, 8] }), zIndexOffset: 2000 }).addTo(map).bindPopup("You (probably)");
+        meCircle = L.circle(ll, { radius: pos.coords.accuracy, color: "#2b7cff", weight: 1, fillOpacity: .08 }).addTo(map);
+      } else { meMarker.setLatLng(ll); meCircle.setLatLng(ll).setRadius(pos.coords.accuracy); }
+      if (first) { first = false; map.flyTo(ll, 16, { duration: .6 }); locateBtn.textContent = "📍 Me"; }
+      renderStatus(computeState(now()));
+    }, err => {
+      watching = false;
+      locateBtn.textContent = err.code === 1 ? "📍 Location blocked" : "📍 Try again";
+    }, { enableHighAccuracy: true, maximumAge: 15e3, timeout: 20e3 });
+  });
+
+  // ---------- Day selection + live focus ----------
+  const selectDay = d => {
+    selectedDay = d;
+    openIdx = null;
+    renderTabs();
+    renderTimeline();
+    updateTimeline(computeState(now()));
+    renderMap();
+    highlight(null, false);
+  };
+
+  const liveTarget = s => s.current.find(e => e.p) || s.current[0] || s.upcoming || events[events.length - 1];
+
+  const jumpToNow = (smooth, scroll = true) => {
+    const target = liveTarget(computeState(now()));
+    if (selectedDay !== target.day) selectDay(target.day);
+    if (openIdx !== target.i) toggleOpen(target.i);
+    followLive = true;
+    const li = document.getElementById(`ev-${target.i}`);
+    if (li && scroll) li.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "center" });
+  };
+
+  const tick = () => {
+    const prevDay = state.t && dayKey(state.t);
+    state = computeState(now());
+    renderStatus(state);
+    updateTimeline(state);
+    if (prevDay && prevDay !== dayKey(state.t)) renderTabs();
+    if (followLive && liveTarget(state).i !== openIdx) jumpToNow(true, !state.before);
+  };
+
+  // Timers first: a map error during startup mustn't stop the weather or the live refresh.
+  loadWeather();
+  setInterval(loadWeather, 60 * 60e3);
+  setInterval(tick, 15e3);
+
+  // Focus whatever's on (or next) right now. Before the trip, don't scroll past the header.
+  const t0 = now();
+  jumpToNow(false, t0 >= tripStart && t0 < tripEnd);
+  tick();
+})();
+</script>
+</body>
+</html>
