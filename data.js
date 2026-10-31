@@ -29,7 +29,7 @@ const EVENTS = [
   { start: "2026-10-31T10:00", end: "2026-10-31T11:30", title: "Brunch",            place: "koffee",     leg: "hotel>koffee" },
   { start: "2026-10-31T12:30", end: "2026-10-31T14:00", title: "VR",                place: "meetspace",  leg: "koffee>meetspace" },
   { start: "2026-10-31T14:00", end: "2026-10-31T16:30", title: "Drinking / chilling", place: "marble",   leg: "meetspace>marble" },
-  { start: "2026-10-31T17:00", end: "2026-10-31T18:00", title: "Quiz",              place: "quiz",       leg: "marble>quiz" },
+  { start: "2026-10-31T16:50", end: "2026-10-31T18:00", title: "Quiz",              place: "quiz",       leg: "marble>quiz" },
   { start: "2026-10-31T18:00", end: "2026-10-31T19:00", title: "Drinking / chilling", place: null, tbc: "Venue TBC, decide on the evening", note: "Quick pitstop before dinner." },
   { start: "2026-10-31T19:00", end: "2026-10-31T20:30", title: "Dinner",            place: "bundobust",  leg: "quiz>bundobust" },
   { start: "2026-10-31T21:00", end: "2026-11-01T00:00", title: "Karaoke",           place: "bcd",        leg: "bundobust>bcd", note: "⚠️ This is for Martin's birthday, not Adam's Stag" },
