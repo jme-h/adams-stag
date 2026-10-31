@@ -400,7 +400,13 @@
   events.forEach(e => {
     const later = events.find(o => o.startD > e.startD);
     const nextStart = later ? later.startD : new Date(+e.startD + 60 * MIN);
-    if (e.end === "late") { e.endD = nextStart; e.late = true; }
+    // "Late" wraps up by 5am at the latest, so the morning after belongs to the new day.
+    if (e.end === "late") {
+      let fiveAm = parse(e.start.slice(0, 10) + "T05:00");
+      if (fiveAm <= e.startD) fiveAm = new Date(+fiveAm + 24 * 60 * MIN);
+      e.endD = new Date(Math.min(+nextStart, +fiveAm));
+      e.late = true;
+    }
     else if (e.end) e.endD = parse(e.end);
     else { e.endD = new Date(Math.min(+e.startD + 15 * MIN, +nextStart)); e.moment = true; }
     if (e.leg) e.route = ROUTES[e.leg];
